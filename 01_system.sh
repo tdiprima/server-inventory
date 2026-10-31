@@ -33,7 +33,7 @@ run 'pvs 2>/dev/null; vgs 2>/dev/null; lvs 2>/dev/null'
 hdr "5. Mounts (pseudo filesystems hidden)"
 run "grep -v -E ' (proc|sysfs|cgroup2?|tmpfs|devtmpfs|devpts|securityfs|pstore|debugfs|mqueue|hugetlbfs|autofs|configfs|fusectl|binfmt_misc|tracefs|bpf|rpc_pipefs|nsfs|overlay|squashfs) ' /proc/mounts"
 run 'df -hP -l'
-warn "Network mounts below are data on ANOTHER machine. The user needs to know about them."
+warn "Network mounts below are data on ANOTHER machine. The server owner must know about them."
 if grep -q -E ' (nfs4?|cifs|smbfs|glusterfs|fuse\.sshfs) ' /proc/mounts; then
   grep -E ' (nfs4?|cifs|smbfs|glusterfs|fuse\.sshfs) ' /proc/mounts | while read -r src mp fs _; do ok "network mount: $src on $mp ($fs)"; done
 else miss "no network mounts active"; fi
