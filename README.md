@@ -1,12 +1,12 @@
 # server-spelunking 💡
 
-Read-only Bash and legacy `mongo` shell scripts that inventory aging RHEL 7 caMicroscope servers (system, MongoDB, whole-slide images, annotations) and safely copy and repair their stopped MongoDB 3.x data on a modern host.
+Read-only shell scripts that map what lives on inherited legacy research servers (system, databases, imaging data, analysis results) and safely preserve stopped database files for recovery on a modern host.
 
-## Inheriting a Server Nobody Documented
+## Taking Stock of Inherited Servers
 
-Research imaging servers outlive the people who built them. You get root on a box running RHEL 7, a few terabytes of pathology slides, several MongoDB 3.x data folders left by unclean shutdowns, a caMicroscope viewer in Docker, and no notes. Before anyone can migrate or retire the machine, someone has to answer basic questions: What is on the disks? Which MongoDB versions wrote which folders? What databases and collections exist, and how big are they? Where are the slides and the , tumor, and annotation results?
+Long-running research infrastructure changes hands. When a legacy server lands in your care, the first job is to build a clear picture of it before planning a migration or retirement: what hardware and storage it has, which services and databases it runs, where the multi-terabyte image collections and analysis results live, and how it all fits together.
 
-The obvious shortcuts are dangerous. Starting `mongod` on the originals replays the journal and rewrites files, so you can lose the exact on-disk state you need for recovery. A naive `find /` across millions of files can take hours and starve the other tenants on the machine. Modern `mongosh` does not speak to MongoDB 3.x, and MongoDB 3.x does not install on a current Ubuntu because it needs `libssl1.0`.
+That inventory has to be gathered carefully. Older database engines must not be started on their original data folders, because startup can rewrite files and destroy the exact state you need to preserve. Full-disk scans across millions of files can run for hours and compete with other workloads on the machine. And the tooling that ships with a current operating system often cannot talk to software several major versions behind. The scripts here are built for that situation: observe everything, change nothing, and leave a readable log behind.
 
 ## Look First, Never Touch the Originals
 
@@ -80,10 +80,10 @@ Set `NO_COLOR=1` to disable color. Edit the paths at the top of `app_inv.sh` to 
 To copy and repair stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` script on the source server inside `tmux`, then on the destination host:
 
 ```bash
-./repair-mongo-copy.sh /path/to/your/db 3.2 27018
-mongo --port 27018
+./repair-mongo-copy.sh /path/to/your/db 3.2 27017
+mongo --port 27017
 ```
 
 Repair rewrites files, so run it only on the copy. The script snapshots to `<dbpath>.pre-repair` first and needs that much free space.
 
-Requires Bash, GNU coreutils, `rsync`, and for repair Docker on the destination. Tested against RHEL 7 sources and an Ubuntu 24.04 destination.
+Requires Bash, GNU coreutils, `rsync`, and for repair Docker on the destination. Tested against RHEL 7 sources.
