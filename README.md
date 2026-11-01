@@ -38,7 +38,7 @@ Owner:          mongod
 [NOTE] mongod.lock not empty: running now, or last shutdown was unclean
       SIZE  DATABASE.COLLECTION
    400.0 GB  app.annotations
-   190.0 GB  app.app.objects
+   190.0 GB  app.objects
     40.0 GB  project.metadata
     10.0 GB  project.images
 ...
