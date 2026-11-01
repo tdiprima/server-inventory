@@ -13,12 +13,24 @@
 #   3.4.x for tcga and til_maps).
 #
 # rsync is resumable: re-run the script after an interruption and it picks up.
+#
+# Usage: ./copy-app1-mongo.sh [-H host] [-d dest_root] [-l logfile] [src_dir ...]
+#   src_dir  dbPath directories to copy. Default: the list below.
 set -euo pipefail
 
 DEST_HOST=192.0.2.10
 DEST_USER=${DEST_USER:-root}
 DEST_ROOT=/data/app1
 LOG=/var/tmp/copy-app1-mongo.log
+while getopts 'H:d:l:' o; do
+  case $o in
+    H) DEST_HOST=$OPTARG ;;
+    d) DEST_ROOT=$OPTARG ;;
+    l) LOG=$OPTARG ;;
+    *) echo "usage: $0 [-H host] [-d dest_root] [-l logfile] [src_dir ...]" >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND-1))
 
 # Source dbPath directories (from the data-location notes), most important first.
 SRC_DIRS=(
@@ -30,6 +42,8 @@ SRC_DIRS=(
 if [[ "${INCLUDE_OLD:-0}" == 1 ]]; then
   SRC_DIRS+=( /data/db.old /data/data.old )
 fi
+# Positional args replace the default list.
+[[ $# -gt 0 ]] && SRC_DIRS=("$@")
 
 # Config files that say how mongod was run. Small, copy always.
 SRC_FILES=( /etc/mongod.conf )

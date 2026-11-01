@@ -4,7 +4,8 @@
 # read-only-ish on a local port so you can inspect with the legacy mongo shell.
 #
 # Usage:
-#   ./repair-mongo-copy.sh <dbpath> <mongo-version> [port]
+#   ./repair-mongo-copy.sh [-r allowed_root] <dbpath> <mongo-version> [port]
+#   -r  only dbpaths under this prefix are accepted (default /data/app)
 # Examples:
 #   ./repair-mongo-copy.sh /path/to/your/db              3.2 27018
 #   ./repair-mongo-copy.sh /data/app1/data/data         3.4 27019
@@ -25,6 +26,15 @@
 # reversible: <dbpath>.pre-repair
 set -euo pipefail
 
+ALLOWED_ROOT=/data/app
+while getopts 'r:' o; do
+  case $o in
+    r) ALLOWED_ROOT=$OPTARG ;;
+    *) echo "usage: $0 [-r allowed_root] <dbpath> <mongo-version> [port]" >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND-1))
+
 DBPATH=${1:?dbpath}
 VER=${2:?mongo version: 3.2 | 3.4 | 3.6}
 PORT=${3:-27018}
@@ -33,7 +43,7 @@ IMG=mongo:$VER
 LOG=$DBPATH.repair.log
 
 [[ -d $DBPATH ]] || { echo "no such dir: $DBPATH" >&2; exit 1; }
-[[ $DBPATH == /data/app* ]] || { echo "refusing: $DBPATH is not under /data/app*. Repair copies only." >&2; exit 1; }
+[[ $DBPATH == "$ALLOWED_ROOT"* ]] || { echo "refusing: $DBPATH is not under $ALLOWED_ROOT*. Repair copies only." >&2; exit 1; }
 command -v docker >/dev/null || { echo "docker not installed: sudo apt install docker.io" >&2; exit 1; }
 
 # directoryPerDB: app1 db used it (per /etc/mongod.conf). Detect from layout:

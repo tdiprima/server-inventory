@@ -2,7 +2,8 @@
 # App discovery 02: find MongoDB WITHOUT connecting or starting it.
 # Finds binaries, versions, config, data folders, database names (from file names), port, auth.
 # SPEED: FAST (1-3 minutes). SAFETY: GREEN, read-only. Never starts mongod.
-# Usage: sudo bash 02_mongo_probe.sh
+# Usage: sudo bash 02_mongo_probe.sh [search_root ...]
+#   search_root  folders to scan for binaries/config/data. Default: common install roots.
 
 if [ -z "$NO_COLOR" ]; then R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; B=$'\e[1;34m'; C=$'\e[36m'; N=$'\e[0m'; fi
 hdr()  { printf '\n%s===== %s =====%s\n' "$B" "$*" "$N"; }
@@ -15,7 +16,7 @@ mask() { sed -r -e 's#(mongodb://[^:/@ ]*:)[^@ ]*@#\1****@#g' \
   -e "s/((pass(word|wd)?|pwd|secret|token|api_?key|keyfile)[\"' ]*[=:>,]+[[:space:]]*[\"']?)[^\"' ,;)]+/\1****/Ig"; }
 
 [ "$(id -u)" -ne 0 ] && warn "Not root. Data folders may be unreadable. Re-run with sudo."
-ROOTS="/opt /usr/local /usr/bin /home /srv /data /var/lib /root /mnt /export /scratch"
+ROOTS=${*:-"/opt /usr/local /usr/bin /home /srv /data /var/lib /root /mnt /export /scratch"}
 
 hdr "1. MongoDB programs (PATH and common install folders)"
 BINS=$( { command -v mongod mongo mongosh mongodump 2>/dev/null

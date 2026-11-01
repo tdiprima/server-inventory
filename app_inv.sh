@@ -1,7 +1,11 @@
-cd $HOME/app-inventory || exit 1
+# Usage: bash app_inv.sh [inventory_dir] [log_dir]
+#   inventory_dir  folder holding the 0N_*.sh scripts (default $HOME/app-inventory)
+#   log_dir        where logs go, relative to inventory_dir (default logs/app1)
+INV=${1:-$HOME/app-inventory}
+L=${2:-logs/app1}
+cd "$INV" || exit 1
 
-mkdir -p logs/app1
-L=logs/app1
+mkdir -p "$L"
 
 # ============================================================
 # 1. System and MongoDB
@@ -78,4 +82,4 @@ sudo bash ./07_wt_catalog.sh 2>&1 | tee "$L/07.log"
 
 echo "=== App 1 inventory complete ==="
 echo "Logs saved to:"
-echo "$HOME/app-inventory/logs/app1/"
+echo "$INV/$L/"

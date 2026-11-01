@@ -54,7 +54,7 @@ Copy the scripts to the target server and run the fast GREEN scripts first:
 
 ```bash
 sudo bash 01_system.sh
-sudo bash 02_mongo_probe.sh
+sudo bash 02_mongo_probe.sh           # or: sudo bash 02_mongo_probe.sh /data /opt   (search roots)
 sudo bash 07_wt_catalog.sh            # or: sudo bash 07_wt_catalog.sh /path/to/dbdir
 sudo bash 03_camicroscope.sh [/path/to/app]
 ```
@@ -75,12 +75,27 @@ mongo --quiet --port 27017 06_mongo_inventory.js
 mongo --quiet --eval 'var PEEK=true' 06_mongo_inventory.js   # field names and types, no values
 ```
 
-Set `NO_COLOR=1` to disable color. Edit the paths at the top of `app_inv.sh` to run the whole fast set and keep logs.
+Set `NO_COLOR=1` to disable color. To run the whole fast set and keep logs:
 
-To copy and repair stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` script on the source server inside `tmux`, then on the destination host:
+```bash
+bash app_inv.sh                              # scripts in $HOME/app-inventory, logs in logs/app1
+bash app_inv.sh /opt/inventory logs/app3     # custom script dir and log dir
+```
+
+To copy stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` script on the source server inside `tmux`:
+
+```bash
+./copy-app1-mongo.sh                                   # defaults: host 192.0.2.10, /data/app1, built-in dir list
+./copy-app1-mongo.sh -H 10.0.0.5 -d /mnt/app1 -l /tmp/copy.log
+./copy-app3-mongo.sh /data/registry_project/data       # only these source dirs
+INCLUDE_OLD=1 ./copy-app1-mongo.sh                     # also copy the .old folders
+```
+
+Then on the destination host:
 
 ```bash
 ./repair-mongo-copy.sh /path/to/your/db 3.2 27017
+./repair-mongo-copy.sh -r /mnt/app1 /mnt/app1/data/db 3.2 27017   # copies outside /data/app*
 mongo --port 27017
 ```
 

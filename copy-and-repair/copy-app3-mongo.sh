@@ -13,12 +13,24 @@
 #   registry_project; binaries 3.2.4 / 3.4.4 / 3.6.5 exist in home dirs).
 #
 # rsync is resumable: re-run the script after an interruption and it picks up.
+#
+# Usage: ./copy-app3-mongo.sh [-H host] [-d dest_root] [-l logfile] [src_dir ...]
+#   src_dir  dbPath directories to copy. Default: the list below.
 set -euo pipefail
 
 DEST_HOST=192.0.2.10
 DEST_USER=${DEST_USER:-root}
 DEST_ROOT=/data/app3
 LOG=/var/tmp/copy-app3-mongo.log
+while getopts 'H:d:l:' o; do
+  case $o in
+    H) DEST_HOST=$OPTARG ;;
+    d) DEST_ROOT=$OPTARG ;;
+    l) LOG=$OPTARG ;;
+    *) echo "usage: $0 [-H host] [-d dest_root] [-l logfile] [src_dir ...]" >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND-1))
 
 # Source dbPath directories (from the data-location notes), most important first.
 SRC_DIRS=(
@@ -30,6 +42,8 @@ SRC_DIRS=(
 # Config:  data-API project files name the DBs and collections. Small, copy always.
 SRC_FILES=( /etc/mongod.conf )
 SRC_DIRS+=( /data/home/docker/volumes/_data/bin/projects )
+# Positional args replace the default list.
+[[ $# -gt 0 ]] && SRC_DIRS=("$@")
 
 # Safety: never copy a dbPath while mongod is running on it.
 if pgrep -x mongod >/dev/null; then
