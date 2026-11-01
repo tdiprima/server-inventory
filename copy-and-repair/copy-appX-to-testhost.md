@@ -2,7 +2,7 @@
 
 ## Scripts
 
-Two scripts are located in `Scripts/`:
+Two thin wrappers plus one shared implementation (`copy-mongo-lib.sh`, which holds the safety checks, transfer, and verification) are located in `Scripts/`:
 
 | Script | Run on | Destination |
 |---|---|---|

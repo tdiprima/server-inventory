@@ -9,8 +9,21 @@ ok()   { printf '%s[FOUND]%s %s\n' "$G" "$N" "$*"; }
 warn() { printf '%s[NOTE]%s %s\n' "$Y" "$N" "$*"; }
 miss() { printf '%s[NONE]%s %s\n' "$R" "$N" "$*"; }
 T=""; command -v timeout >/dev/null && T="timeout 30"
-# run: show the command, run it with a time limit, cap output lines
-run()  { printf '%s$ %s%s\n' "$C" "$*" "$N"; $T bash -c "$*" 2>&1 | head -n "${MAXLINES:-40}"; }
+FAILED=0; TIMEDOUT=0
+# run: show the command, run it with a time limit, cap output lines, keep its exit status.
+# rc 124 = timeout, 126/127 = could not run, 141 = killed by the line cap (fine).
+# Other nonzero (e.g. grep with no match) is shown but not counted as a failure.
+run()  {
+  printf '%s$ %s%s\n' "$C" "$*" "$N"
+  $T bash -c "$*" 2>&1 | head -n "${MAXLINES:-40}"
+  local rc=${PIPESTATUS[0]}
+  case $rc in
+    0|141) ;;
+    124) TIMEDOUT=$((TIMEDOUT+1)); miss "TIMEOUT after 30s, output incomplete" ;;
+    126|127) FAILED=$((FAILED+1)); miss "could not run (exit $rc)" ;;
+    *) warn "exit status $rc" ;;
+  esac
+}
 
 [ "$(id -u)" -ne 0 ] && warn "Not root. Some sections will be incomplete. Re-run with sudo."
 printf '%sApp system inventory - %s - %s%s\n' "$B" "$(hostname)" "$(date)" "$N"
@@ -109,4 +122,10 @@ run 'ls -lt /var/log/mongodb /var/log/mongo /var/log/apache2 /var/log/httpd /var
 hdr "19. Firewall state (check isolation)"
 run 'iptables -L -n 2>/dev/null | head -40; ufw status 2>/dev/null; firewall-cmd --list-all 2>/dev/null'
 
-printf '\n%sDone. Next: script 02 (MongoDB).%s\n' "$G" "$N"
+# Exit contract: 0 = complete, 2 = partial (a command timed out or failed).
+if [ "$TIMEDOUT" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
+  printf '\n%sSTATUS: COMPLETE. Next: script 02 (MongoDB).%s\n' "$G" "$N"
+else
+  printf '\n%sSTATUS: PARTIAL. %s timed out, %s failed (see [NONE]/[NOTE] lines above).%s\n' "$R" "$TIMEDOUT" "$FAILED" "$N"
+  exit 2
+fi

@@ -105,31 +105,27 @@ Inspects the database directory to determine whether MongoDB was configured with
 
 Uses the detected layout when starting MongoDB.
 
-### 3. Handle Stale Lock Files
+### 3. Clone Into a Repair Workspace
 
-Removes a stale `mongod.lock` file left behind by an unclean shutdown.
-
-This operation must only occur on the copied database.
-
-### 4. Create a Pre-Repair Snapshot
-
-Creates a backup of the database directory before modifying it.
-
-Snapshot location:
+The preserved copy at `<dbpath>` is never modified. The script clones it into a workspace it owns:
 
 ```text
-<dbpath>.pre-repair
+<dbpath>.repair-work      (or -w <dir>)
 ```
 
-The snapshot is created once and retained for rollback.
+The workspace must not exist beforehand; the script refuses to reuse a directory it did not create. A app.annotationser file `.repair-workspace` inside it names the source copy, and the script refuses to accept a workspace as `<dbpath>`. Any inspection container from a previous run with the same name is stopped before the clone.
 
-This allows the repair to be undone if necessary.
+Undo at any time: `rm -rf <workspace>`.
+
+### 4. Handle Stale Lock Files
+
+Removes a stale `mongod.lock` file left behind by an unclean shutdown, in the workspace only.
 
 ### 5. Execute MongoDB Repair
 
 Starts a Docker container using the selected MongoDB version.
 
-- Mounts the copied database directory.
+- Mounts the workspace.
 - Runs as the database files' owner.
 - Executes `mongod --repair`.
 - Performs recovery operations against the copied data.
@@ -150,7 +146,7 @@ The script then:
 - Displays commands for accessing the MongoDB shell.
 - Displays commands for exporting data with `mongodump`.
 - Displays commands for stopping MongoDB.
-- Displays commands for undoing the repair using the pre-repair snapshot.
+- Displays commands for undoing the repair by deleting the workspace.
 
 ## MongoDB Version Selection
 
@@ -171,26 +167,16 @@ Where possible, match the original MongoDB patch version rather than relying onl
 
 ## Storage Requirements
 
-The pre-repair snapshot requires additional storage approximately equal to the size of the database being repaired, unless an appropriate copy-on-write snapshot mechanism is used.
+The repair workspace requires additional storage approximately equal to the size of the database being repaired, unless an appropriate copy-on-write snapshot mechanism is used.
 
-| Database | Original size | Approximate total with snapshot |
+| Database | Original size | Approximate total with workspace |
 |---|---:|---:|
 | `db` | 1.9 TB | 3.8 TB |
 | `registry_project` | 6.1 TB | 12.2 TB |
 
-### Low-Disk-Space Workaround
+### Low Disk Space
 
-The proposed script supports skipping snapshot creation if the snapshot directory already exists.
-
-For example:
-
-```bash
-mkdir <dbpath>.pre-repair
-```
-
-**Warning:** This bypasses the intended rollback protection. An empty directory is not a valid backup.
-
-Do not use this workaround unless another verified, unmodified copy of the database exists.
+There is no skip-the-clone option. The script refuses a pre-existing workspace, so an empty directory cannot be passed off as a backup. If space is short, put the workspace on another filesystem with `-w`.
 
 ## Verification and Testing
 
@@ -209,7 +195,7 @@ MongoDB 3.x images are deprecated. The required tags may no longer be available 
 
 **Storage exhaustion**
 
-The pre-repair snapshot can double the disk space required for each database. This is particularly significant for the 6.1 TB `registry_project` database.
+The repair workspace can double the disk space required for each database. This is particularly significant for the 6.1 TB `registry_project` database.
 
 **Unclean shutdown recovery**
 
@@ -230,7 +216,7 @@ Using a newer MongoDB version is not automatically safe. Data-file format compat
 3. Verify the copies before attempting recovery.
 4. Confirm the exact MongoDB versions and storage engines used by the original databases.
 5. Validate that the required Docker images can run on Ubuntu 24.04.5.
-6. Create verified pre-repair backups or snapshots.
+6. Confirm free space for the repair workspace.
 7. Attempt recovery on the smallest database first, using `/data/app3/data/backup-registry/data`.
 8. Verify database startup, collections, and data integrity.
 9. Proceed to the larger databases only after the recovery procedure has been validated.

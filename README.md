@@ -19,9 +19,9 @@ Every discovery script is read-only, labeled with a speed estimate (seconds to h
 - `05_annotation_probe.sh` classifies result files by their first 2 KB (Aperio ImageScope XML, caMicroscope JSON, GeoJSON,  and tumor CSVs) and matches each ImageScope XML to its `.svs` slide.
 - `06_mongo_inventory.js` lists databases, collections, estimated sizes and counts, indexes, and GridFS buckets using metadata commands only. Written in ES5 so the legacy `mongo` shell can run it against an already-running server.
 - `07_wt_catalog.sh` recovers `database.collection` names and on-disk sizes straight from the raw bytes of WiredTiger's `_mdb_catalog.wt`, so you get a collection inventory from a stopped database.
-- `app_inv.sh` chains the fast scripts plus `locate` and Docker queries and saves every log under `logs/`.
+- `app_inv.sh` chains the fast scripts plus `locate` and Docker queries, saves every log under `logs/`, records each step's exit code in `logs/<dir>/status.txt`, and ends with `COMPLETE` (exit 0) or `PARTIAL` (exit 1). `01_system.sh` itself exits 2 when any command timed out or could not run.
 
-The `copy-and-repair/` folder handles the next phase. The copy scripts refuse to run while `mongod` is alive, check free space on the destination, and `rsync` the whole `dbPath` including `journal/` so the exact state is preserved. `repair-mongo-copy.sh` runs only on the copy, refuses any path outside `/data/app*`, snapshots the folder to `<dbpath>.pre-repair` before touching it, then runs `mongod --repair` from the matching `mongo:3.x` Docker image and starts it on a localhost port for inspection.
+The `copy-and-repair/` folder handles the next phase. The copy scripts refuse to run while `mongod` is alive, check free space on the destination, and `rsync` the whole `dbPath` including `journal/` so the exact state is preserved. The host-specific `copy-app*-mongo.sh` wrappers only list directories; the checks, transfer, and verification live once in `copy-mongo-lib.sh`. `repair-mongo-copy.sh` never modifies the preserved copy: it refuses any path outside `/data/app*`, clones the folder into a fresh workspace `<dbpath>.repair-work` that it app.annotationss as its own, then runs `mongod --repair` there from the matching `mongo:3.x` Docker image and starts it on a localhost port for inspection.
 
 ## Example: Collection Names From a Stopped Database
 
@@ -91,14 +91,8 @@ To copy stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` scrip
 INCLUDE_OLD=1 ./copy-app1-mongo.sh                     # also copy the .old folders
 ```
 
-Then on the destination host:
+Then on the destination host (Ubuntu 24.04), repair:
 
-```bash
-./repair-mongo-copy.sh /path/to/your/db 3.2 27017
-./repair-mongo-copy.sh -r /mnt/app1 /mnt/app1/data/db 3.2 27017   # copies outside /data/app*
-mongo --port 27017
-```
+Repair rewrites files, so the script works on a clone in `<dbpath>.repair-work` (or `-w dir`) and needs that much free space. It refuses to run if the workspace already exists; undo is `rm -rf` of the workspace, the preserved copy is never touched.
 
-Repair rewrites files, so run it only on the copy. The script snapshots to `<dbpath>.pre-repair` first and needs that much free space.
-
-Requires Bash, GNU coreutils, `rsync`, and for repair Docker on the destination. Tested against RHEL 7 sources.
+Requires Bash, GNU coreutils, `rsync`. Tested against RHEL 7 sources.
