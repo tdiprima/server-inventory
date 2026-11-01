@@ -47,9 +47,12 @@ fi
 rm -f "$DBPATH/mongod.lock"
 
 # One-time safety snapshot so a failed repair can be undone.
+# Copy into .partial and rename only on success, so an interrupted snapshot
+# is never mistaken for a complete one on rerun.
 if [[ ! -d $DBPATH.pre-repair ]]; then
   echo "snapshot -> $DBPATH.pre-repair (needs as much free space as the dbPath)"
-  rsync -a --sparse "$DBPATH/" "$DBPATH.pre-repair/"
+  rsync -a --sparse "$DBPATH/" "$DBPATH.pre-repair.partial/"
+  mv "$DBPATH.pre-repair.partial" "$DBPATH.pre-repair"
 fi
 
 docker pull "$IMG"
@@ -68,7 +71,7 @@ docker run -d --name "$NAME" \
   --user "$(stat -c %u:%g "$DBPATH")" \
   -p 127.0.0.1:"$PORT":27017 \
   -v "$DBPATH":/data/db \
-  "$IMG" mongod --dbpath /data/db "${DPD[@]}" --bind_ip_all
+  "$IMG" mongod --dbpath /data/db "${DPD[@]}" --bind_ip 0.0.0.0  # --bind_ip_all needs 3.6+
 
 sleep 5
 echo "=== databases" | tee -a "$LOG"

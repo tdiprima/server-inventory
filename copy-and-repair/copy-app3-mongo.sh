@@ -46,18 +46,24 @@ for d in "${SRC_DIRS[@]}"; do
   [[ -d $d ]] || { echo "skip, missing: $d" | tee -a "$LOG"; continue; }
   echo "=== $d" | tee -a "$LOG"
   # Trailing slash on source: contents of $d land in $DEST_ROOT$d (path mirrored).
-  "${RSYNC[@]}" "$d/" "$DEST_USER@$DEST_HOST:$DEST_ROOT$d/"
+  "${RSYNC[@]}" --rsync-path="mkdir -p '$DEST_ROOT$d' && rsync" "$d/" "$DEST_USER@$DEST_HOST:$DEST_ROOT$d/"
 done
 
 for f in "${SRC_FILES[@]}"; do
-  [[ -f $f ]] && "${RSYNC[@]}" "$f" "$DEST_USER@$DEST_HOST:$DEST_ROOT$f"
+  [[ -f $f ]] && "${RSYNC[@]}" --rsync-path="mkdir -p '$DEST_ROOT$(dirname "$f")' && rsync" "$f" "$DEST_USER@$DEST_HOST:$DEST_ROOT$f"
 done
 
 # Verify: a second dry-run pass must list zero files to transfer.
 echo "=== verify" | tee -a "$LOG"
+fail=0
 for d in "${SRC_DIRS[@]}"; do
   [[ -d $d ]] || continue
-  n=$(rsync -aHn --sparse --out-format='%n' "$d/" "$DEST_USER@$DEST_HOST:$DEST_ROOT$d/" | grep -vc '/$' || true)
+  if ! out=$(rsync -aHn --sparse --out-format='%n' "$d/" "$DEST_USER@$DEST_HOST:$DEST_ROOT$d/"); then
+    echo "$d: verify rsync FAILED" | tee -a "$LOG"; fail=1; continue
+  fi
+  n=$(grep -vc '/$' <<<"$out" || true)
   echo "$d: $n files differ" | tee -a "$LOG"
+  [[ $n -eq 0 ]] || fail=1
 done
+if [[ $fail -ne 0 ]]; then echo "VERIFY FAILED. log: $LOG" | tee -a "$LOG"; exit 1; fi
 echo "done. log: $LOG"

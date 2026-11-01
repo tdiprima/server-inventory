@@ -71,7 +71,10 @@ done
 warn "Binaries outside PATH (e.g. /opt/mongodb/bin) are checked in script 02."
 
 hdr "12. Installed packages of interest"
-run "(dpkg -l 2>/dev/null | awk '/^ii/{print \$2, \$3}' || rpm -qa 2>/dev/null) | grep -i -E 'mongo|php|apache|httpd|nginx|openslide|iipimage|tomcat|java|jdk|docker|vips|bioformats'"
+if command -v dpkg >/dev/null; then PKGS="dpkg -l 2>/dev/null | awk '/^ii/{print \$2, \$3}'"
+elif command -v rpm >/dev/null; then PKGS="rpm -qa 2>/dev/null"
+else PKGS="echo 'no dpkg or rpm found'"; fi
+run "$PKGS | grep -i -E 'mongo|php|apache|httpd|nginx|openslide|iipimage|tomcat|java|jdk|docker|vips|bioformats'"
 
 hdr "13. Docker"
 if command -v docker >/dev/null; then
