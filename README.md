@@ -31,22 +31,22 @@ Running the WiredTiger catalog scanner on a server where `mongod` is down:
 $ sudo bash 07_wt_catalog.sh /data/db
 
 ===== dbpath: /data/db =====
-Total size:     1.9T
+Total size:     2.0T
 Engine version: WiredTiger 2.7.1
-Last modified:  2021-03-14 02:17
+Last modified:  2021-01-01 02:17
 Owner:          mongod
 [NOTE] mongod.lock not empty: running now, or last shutdown was unclean
       SIZE  DATABASE.COLLECTION
-   412.3 GB  app.annotations
-   188.0 GB  app.objects
-    41.7 GB  project.metadata
-     9.2 GB  project.heatmap
+   400.0 GB  app.annotations
+   190.0 GB  app.app.objects
+    40.0 GB  project.metadata
+    10.0 GB  project.images
 ...
-37 collections, 1.1 TB (compressed on disk; real data is bigger)
+30 collections, 1.0 TB (compressed on disk; real data is bigger)
 [NOTE] Sizes are on-disk WiredTiger files (compressed). Doc counts need a running copy (script 06).
 ```
 
-In seconds, without starting MongoDB, you know this folder was written by MongoDB 3.2, it was shut down uncleanly, and which collections hold the annotation data. That tells you which `mongo:3.2` image to use for repair and which collections to verify first.
+In seconds, without starting MongoDB, you know this folder was written by MongoDB 3.2, it was shut down uncleanly, and which collections hold the important data. That tells you which `mongo:3.2` image to use for repair and which collections to verify first.
 
 ## Usage
 
@@ -87,7 +87,7 @@ To copy stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` scrip
 ```bash
 ./copy-app1-mongo.sh                                   # defaults: host 192.0.2.10, /data/app1, built-in dir list
 ./copy-app1-mongo.sh -H 10.0.0.5 -d /mnt/app1 -l /tmp/copy.log
-./copy-app2-mongo.sh /data/registry_project/data       # only these source dirs
+./copy-app2-mongo.sh /data/main_project/data           # only these source dirs
 INCLUDE_OLD=1 ./copy-app1-mongo.sh                     # also copy the .old folders
 ```
 

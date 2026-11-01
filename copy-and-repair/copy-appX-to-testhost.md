@@ -6,8 +6,10 @@ Two thin wrappers plus one shared implementation (`copy-mongo-lib.sh`, which hol
 
 | Script | Run on | Destination |
 |---|---|---|
-| `copy-app1-mongo.sh` | `app1` | `192.0.2.10:/data/app1/` |
-| `copy-app2-mongo.sh` | `app2` | `192.0.2.10:/data/app2/` |
+| `copy-app1-mongo.sh` | `app1` | `DEST_HOST:/data/app1/` |
+| `copy-app2-mongo.sh` | `app2` | `DEST_HOST:/data/app2/` |
+
+Both are example configurations. Edit `SRC_DIRS`, `SRC_FILES`, `DEST_ROOT` and `LOG` for your environment. `DEST_HOST` defaults to `192.0.2.10`; override with `-H` or the `DEST_HOST` variable.
 
 ## Copy Method
 
@@ -23,24 +25,26 @@ MongoDB (`mongod`) is stopped on both servers, and the last shutdowns were uncle
 
 ### app1
 
-| Source path | Size | Description |
-|---|---|---|
-| `/data/db` | 1.9 TB | Main , MongoDB 3.2 |
-| `/data/data` | 23 GB | , MongoDB 3.4 |
-| `/data/home/user02/tcga/data` | 657 GB | `app.app.objects`, MongoDB 3.4 |
-| `/etc/mongod.conf` | — | MongoDB configuration |
+| Source path | Description |
+|---|---|
+| `/data/db` | Main DB, MongoDB 3.2 |
+| `/data/secondary/data` | Second `mongod` instance, MongoDB 3.4 |
+| `/data/home/USER/project/data` | Per-user `mongod`, MongoDB 3.4 |
+| `/etc/mongod.conf` | MongoDB configuration |
 
 **Optional:** Copy `db.old` and `data.old` only when `INCLUDE_OLD=1`.
 
 ### app2
 
-| Source path | Size | Description |
-|---|---|---|
-| `/data/backup-registry/data` | 6 GB | Copy first as a test |
-| `/data/registry_project/data` | 6.1 TB | Main registry |
-| `/data/home/user07/app1/data` | 32 GB | Additional MongoDB data |
-| `/data/home/docker/volumes/_data/bin/projects` | — | Database and collection names |
-| `/etc/mongod.conf` | — | MongoDB configuration |
+| Source path | Description |
+|---|---|
+| `/data/backup-small/data` | Small and readable, copy first as a test |
+| `/data/main_project/data` | Main DB, largest |
+| `/data/home/USER/project/data` | Per-user `mongod` |
+| `/var/lib/docker/volumes/APP_VOLUME/_data/projects` | App config naming the databases and collections |
+| `/etc/mongod.conf` | MongoDB configuration |
+
+Find every `dbPath` with `storage.dbPath` in each `mongod.conf`, or from `ps` output while `mongod` was running. Note the `mongod` version that wrote each one; repair needs it.
 
 ## Script Behavior
 
@@ -76,9 +80,8 @@ DEST_USER=root ./copy-app2-mongo.sh
 
 ### Prerequisites
 
-- SSH key authentication to `192.0.2.10`.
-- More than **2.6 TB** of free space for `app1`.
-- More than **6.2 TB** of free space for `app2`.
+- SSH key authentication to the destination host.
+- Free space on the destination larger than the sum of the source directories (`du -sh` each one first).
 
 Destination paths mirror the original source directory structure.
 
@@ -89,7 +92,7 @@ Source:
   app1:/data/db
 
 Destination:
-  192.0.2.10:/path/to/your/db
+  DEST_HOST:/data/app1/data/db
 ```
 
 ## Verification
@@ -104,15 +107,15 @@ A nonzero difference count requires investigation before considering the copy co
 
 A separate SHA-256 checksum manifest was intentionally omitted.
 
-- Hashing approximately 8 TB would be time-consuming.
+- Hashing multi-TB copies would be time-consuming.
 - The `rsync` dry-run verification pass serves as the copy check.
 
 ## Outstanding Checks and Risks
 
 ### Not Yet Verified
 
-- SSH username and key authentication to `192.0.2.10`.
-- Actual free disk space on `192.0.2.10`.
+- SSH username and key authentication to the destination host.
+- Actual free disk space on the destination host.
 
 ### Known Risks
 

@@ -69,10 +69,10 @@ Repair the main  database copied from `app1`:
 ./repair-mongo-copy.sh /path/to/your/db 3.2 27018
 ```
 
-Repair the backup registry database copied from `app2`:
+Repair the small test database copied from `app2`:
 
 ```bash
-./repair-mongo-copy.sh /data/app2/data/backup-registry/data 3.4 27021
+./repair-mongo-copy.sh /data/app2/data/backup-small/data 3.4 27021
 ```
 
 ### Arguments
@@ -152,12 +152,15 @@ The script then:
 
 Use the MongoDB version corresponding to the original database files.
 
-| Database | MongoDB version |
+Example:
+
+| dbPath | MongoDB version |
 |---|---|
-| `db` | 3.2 |
-| `tcga` | 3.4 |
-| `til_maps` | 3.4 |
-| `registry_project` | 3.4 |
+| `/data/db` | 3.2 |
+| `/data/secondary/data` | 3.4 |
+| `/data/main_project/data` | 3.4 |
+
+Get the version from the `mongod` binary that ran each `dbPath`, or from the first lines of its `mongod.log`.
 
 If MongoDB 3.4 refuses to open a database directory, MongoDB 3.6 may be considered after investigating the failure and confirming compatibility.
 
@@ -169,10 +172,12 @@ Where possible, match the original MongoDB patch version rather than relying onl
 
 The repair workspace requires additional storage approximately equal to the size of the database being repaired, unless an appropriate copy-on-write snapshot mechanism is used.
 
-| Database | Original size | Approximate total with workspace |
+Example:
+
+| dbPath | Original size | Approximate total with workspace |
 |---|---:|---:|
-| `db` | 1.9 TB | 3.8 TB |
-| `registry_project` | 6.1 TB | 12.2 TB |
+| `/data/db` | 2 TB | 4 TB |
+| `/data/main_project/data` | 6 TB | 12 TB |
 
 ### Low Disk Space
 
@@ -195,7 +200,7 @@ MongoDB 3.x images are deprecated. The required tags may no longer be available 
 
 **Storage exhaustion**
 
-The repair workspace can double the disk space required for each database. This is particularly significant for the 6.1 TB `registry_project` database.
+The repair workspace can double the disk space required for each database. This is particularly significant for the largest database.
 
 **Unclean shutdown recovery**
 
@@ -217,7 +222,7 @@ Using a newer MongoDB version is not automatically safe. Data-file format compat
 4. Confirm the exact MongoDB versions and storage engines used by the original databases.
 5. Validate that the required Docker images can run on Ubuntu 24.04.5.
 6. Confirm free space for the repair workspace.
-7. Attempt recovery on the smallest database first, using `/data/app2/data/backup-registry/data`.
+7. Attempt recovery on the smallest database first, for example `/data/app2/data/backup-small/data`.
 8. Verify database startup, collections, and data integrity.
 9. Proceed to the larger databases only after the recovery procedure has been validated.
 10. Export recovered data using `mongodump` or another suitable migration method.

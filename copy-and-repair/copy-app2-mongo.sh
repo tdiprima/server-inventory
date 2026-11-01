@@ -1,27 +1,29 @@
 #!/usr/bin/env bash
-# Copy App 3 MongoDB data directories to 192.0.2.10:/data/app2/
+# Example: copy a server's MongoDB data directories to DEST_HOST:/data/app2/
 #
-# Run ON app2 as root (or a user who can read /data/registry_project etc.).
-# Run inside tmux or screen: 6.1 TB takes a day or more.
+# Edit SRC_DIRS, SRC_FILES, DEST_ROOT and LOG for your environment, then
+# run ON the source server as root (or a user who can read every dbPath).
+# Run inside tmux or screen: multi-TB copies take a day or more.
 #
 # Why raw folder copy, not mongodump: see copy-mongo-lib.sh. Repair happens
-# later on the COPY with the matching mongod version (3.4.x era for
-# registry_project; binaries 3.2.4 / 3.4.4 / 3.6.5 exist in home dirs).
+# later on the COPY with the mongod version that wrote each dbPath
+# (check for mongod binaries in home dirs if the version is unknown).
 #
 # Usage: ./copy-app2-mongo.sh [-H host] [-d dest_root] [-l logfile] [src_dir ...]
 #   src_dir  dbPath directories to copy. Default: the list below.
 DEST_ROOT=/data/app2
 LOG=/var/tmp/copy-app2-mongo.log
 
-# Source dbPath directories (from the data-location notes), most important first.
+# Source dbPath directories (from mongod.conf storage.dbPath, or ps output),
+# most important first. Put a small one first as a test of the pipeline.
 SRC_DIRS=(
-  /data/backup-registry/data         # 6 GB    small, readable catalog, do first as a test
-  /data/registry_project/data        # 6.1 TB  main registry DB (app, app_comp), unclean shutdown
-  /data/home/user07/app1/data    # 32 GB   app.*, registry.images, camicWebapp.*
+  /data/backup-small/data           # small, readable: do first as a test
+  /data/main_project/data           # main DB, largest, unclean shutdown
+  /data/home/USER/project/data      # per-user mongod
 )
 
-# Config:  data-API project files name the DBs and collections. Small, copy always.
+# Config: files that name the DBs and collections an app uses. Small, copy always.
 SRC_FILES=( /etc/mongod.conf )
-SRC_DIRS+=( /data/home/docker/volumes/_data/bin/projects )
+SRC_DIRS+=( /var/lib/docker/volumes/APP_VOLUME/_data/projects )
 
 . "$(dirname "$0")/copy-mongo-lib.sh"
