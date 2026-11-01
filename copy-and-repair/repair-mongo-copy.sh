@@ -11,8 +11,8 @@
 #   ./repair-mongo-copy.sh /path/to/your/db              3.2 27018
 #   ./repair-mongo-copy.sh /data/app1/data/data         3.4 27019
 #   ./repair-mongo-copy.sh /data/app1/data/home/user02/tcga/data  3.4 27020
-#   ./repair-mongo-copy.sh /data/app3/data/backup-registry/data      3.4 27021
-#   ./repair-mongo-copy.sh /data/app3/data/registry_project/data     3.4 27022
+#   ./repair-mongo-copy.sh /data/app2/data/backup-registry/data      3.4 27021
+#   ./repair-mongo-copy.sh /data/app2/data/registry_project/data     3.4 27022
 #
 # Version per folder (from the notes): db -> 3.2 (WiredTiger 2.7.1 files).
 # tcga, til_maps, registry_project -> 3.4. If 3.4 refuses to open a folder, try 3.6.

@@ -79,7 +79,7 @@ Set `NO_COLOR=1` to disable color. To run the whole fast set and keep logs:
 
 ```bash
 bash app_inv.sh                              # scripts in $HOME/app-inventory, logs in logs/app1
-bash app_inv.sh /opt/inventory logs/app3     # custom script dir and log dir
+bash app_inv.sh /opt/inventory logs/app2     # custom script dir and log dir
 ```
 
 To copy stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` script on the source server inside `tmux`:
@@ -87,12 +87,19 @@ To copy stopped MongoDB data, run the matching `copy-and-repair/copy-*.sh` scrip
 ```bash
 ./copy-app1-mongo.sh                                   # defaults: host 192.0.2.10, /data/app1, built-in dir list
 ./copy-app1-mongo.sh -H 10.0.0.5 -d /mnt/app1 -l /tmp/copy.log
-./copy-app3-mongo.sh /data/registry_project/data       # only these source dirs
+./copy-app2-mongo.sh /data/registry_project/data       # only these source dirs
 INCLUDE_OLD=1 ./copy-app1-mongo.sh                     # also copy the .old folders
 ```
 
-Then on the destination host (Ubuntu 24.04), repair:
+Then on the destination host (Ubuntu 24.04), install Docker once, then repair:
+
+```bash
+sudo ./install-docker.sh            # apt docker.io, enables the service, adds you to the docker group
+./repair-mongo-copy.sh /path/to/your/db 3.2 27017
+./repair-mongo-copy.sh -r /mnt/app1 /mnt/app1/data/db 3.2 27017   # copies outside /data/app*
+mongo --port 27017
+```
 
 Repair rewrites files, so the script works on a clone in `<dbpath>.repair-work` (or `-w dir`) and needs that much free space. It refuses to run if the workspace already exists; undo is `rm -rf` of the workspace, the preserved copy is never touched.
 
-Requires Bash, GNU coreutils, `rsync`. Tested against RHEL 7 sources.
+Requires Bash, GNU coreutils, `rsync`, and for repair Docker on the destination (`copy-and-repair/install-docker.sh` sets it up). Tested against RHEL 7 sources.

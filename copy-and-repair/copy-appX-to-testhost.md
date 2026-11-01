@@ -7,7 +7,7 @@ Two thin wrappers plus one shared implementation (`copy-mongo-lib.sh`, which hol
 | Script | Run on | Destination |
 |---|---|---|
 | `copy-app1-mongo.sh` | `app1` | `192.0.2.10:/data/app1/` |
-| `copy-app3-mongo.sh` | `app3` | `192.0.2.10:/data/app3/` |
+| `copy-app2-mongo.sh` | `app2` | `192.0.2.10:/data/app2/` |
 
 ## Copy Method
 
@@ -32,7 +32,7 @@ MongoDB (`mongod`) is stopped on both servers, and the last shutdowns were uncle
 
 **Optional:** Copy `db.old` and `data.old` only when `INCLUDE_OLD=1`.
 
-### app3
+### app2
 
 | Source path | Size | Description |
 |---|---|---|
@@ -68,17 +68,17 @@ On `app1`:
 DEST_USER=root ./copy-app1-mongo.sh
 ```
 
-On `app3`:
+On `app2`:
 
 ```bash
-DEST_USER=root ./copy-app3-mongo.sh
+DEST_USER=root ./copy-app2-mongo.sh
 ```
 
 ### Prerequisites
 
 - SSH key authentication to `192.0.2.10`.
 - More than **2.6 TB** of free space for `app1`.
-- More than **6.2 TB** of free space for `app3`.
+- More than **6.2 TB** of free space for `app2`.
 
 Destination paths mirror the original source directory structure.
 
@@ -116,7 +116,7 @@ A separate SHA-256 checksum manifest was intentionally omitted.
 
 ### Known Risks
 
-**Filesystem layout on app3**
+**Filesystem layout on app2**
 
 Confirm whether `/data` resides on the expected filesystem before starting the copy.
 

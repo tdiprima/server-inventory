@@ -69,10 +69,10 @@ Repair the main  database copied from `app1`:
 ./repair-mongo-copy.sh /path/to/your/db 3.2 27018
 ```
 
-Repair the backup registry database copied from `app3`:
+Repair the backup registry database copied from `app2`:
 
 ```bash
-./repair-mongo-copy.sh /data/app3/data/backup-registry/data 3.4 27021
+./repair-mongo-copy.sh /data/app2/data/backup-registry/data 3.4 27021
 ```
 
 ### Arguments
@@ -217,7 +217,7 @@ Using a newer MongoDB version is not automatically safe. Data-file format compat
 4. Confirm the exact MongoDB versions and storage engines used by the original databases.
 5. Validate that the required Docker images can run on Ubuntu 24.04.5.
 6. Confirm free space for the repair workspace.
-7. Attempt recovery on the smallest database first, using `/data/app3/data/backup-registry/data`.
+7. Attempt recovery on the smallest database first, using `/data/app2/data/backup-registry/data`.
 8. Verify database startup, collections, and data integrity.
 9. Proceed to the larger databases only after the recovery procedure has been validated.
 10. Export recovered data using `mongodump` or another suitable migration method.
